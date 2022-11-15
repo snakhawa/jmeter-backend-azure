@@ -140,13 +140,15 @@ public class AzureBackendClient extends AbstractBackendListenerClient {
 
     @Override
     public void setupTest(BackendListenerContext context) throws Exception {
-   
+        enabled = context.getBooleanParameter(KEY_ENABLED, DEFAULT_ENABLED);
         testName = context.getParameter(KEY_TEST_NAME, DEFAULT_TEST_NAME);
         liveMetrics = context.getBooleanParameter(KEY_LIVE_METRICS, DEFAULT_LIVE_METRICS);
         samplersList = context.getParameter(KEY_SAMPLERS_LIST, DEFAULT_SAMPLERS_LIST).trim();
         useRegexForSamplerList = context.getBooleanParameter(KEY_USE_REGEX_FOR_SAMPLER_LIST, DEFAULT_USE_REGEX_FOR_SAMPLER_LIST);
         logResponseData = context.getBooleanParameter(KEY_LOG_RESPONSE_DATA, DEFAULT_LOG_RESPONSE_DATA);
         logSampleData = context.getBooleanParameter(KEY_LOG_SAMPLE_DATA, DEFAULT_LOG_SAMPLE_DATA);
+        
+        log.info("{}: Configured enabled state = {}", KEY_ENABLED, enabled);
         
         Iterator<String> iterator = context.getParameterNamesIterator();
         while (iterator.hasNext()) {
@@ -239,6 +241,7 @@ public class AzureBackendClient extends AbstractBackendListenerClient {
     public void handleSampleResults(List<SampleResult> results, BackendListenerContext context) {
     
         enabled = context.getBooleanParameter(KEY_ENABLED, DEFAULT_ENABLED);
+        //Send metrics only if its enabled
         if(enabled){
          boolean samplersToFilterMatch;
                 for (SampleResult sr : results) {
