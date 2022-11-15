@@ -34,6 +34,7 @@ public class AzureBackendClient extends AbstractBackendListenerClient {
     /**
      * Argument keys.
      */
+    private static final String KEY_ENABLED = "enabled";
     private static final String KEY_TEST_NAME = "testName";
     private static final String KEY_INSTRUMENTATION_KEY = "instrumentationKey";
     private static final String KEY_CONNECTION_STRING = "connectionString";
@@ -49,6 +50,7 @@ public class AzureBackendClient extends AbstractBackendListenerClient {
     /**
      * Default argument values.
      */
+    private static final boolean DEFAULT_ENABLED = true;
     private static final String DEFAULT_TEST_NAME = "jmeter";
     private static final String DEFAULT_CONNECTION_STRING = "";
     private static final boolean DEFAULT_LIVE_METRICS = true;
@@ -67,6 +69,11 @@ public class AzureBackendClient extends AbstractBackendListenerClient {
      */
     private TelemetryClient telemetryClient;
 
+   /**
+     * Whether to send metrics to the App Insights.
+     */
+    private boolean enabled;
+    
     /**
      * Name of the test.
      */
@@ -119,6 +126,7 @@ public class AzureBackendClient extends AbstractBackendListenerClient {
     @Override
     public Arguments getDefaultParameters() {
         Arguments arguments = new Arguments();
+        arguments.addArgument(KEY_ENABLED,Boolean.toString(DEFAULT_ENABLED));
         arguments.addArgument(KEY_TEST_NAME, DEFAULT_TEST_NAME);
         arguments.addArgument(KEY_CONNECTION_STRING, DEFAULT_CONNECTION_STRING);
         arguments.addArgument(KEY_LIVE_METRICS, Boolean.toString(DEFAULT_LIVE_METRICS));
@@ -132,13 +140,14 @@ public class AzureBackendClient extends AbstractBackendListenerClient {
 
     @Override
     public void setupTest(BackendListenerContext context) throws Exception {
+   
         testName = context.getParameter(KEY_TEST_NAME, DEFAULT_TEST_NAME);
         liveMetrics = context.getBooleanParameter(KEY_LIVE_METRICS, DEFAULT_LIVE_METRICS);
         samplersList = context.getParameter(KEY_SAMPLERS_LIST, DEFAULT_SAMPLERS_LIST).trim();
         useRegexForSamplerList = context.getBooleanParameter(KEY_USE_REGEX_FOR_SAMPLER_LIST, DEFAULT_USE_REGEX_FOR_SAMPLER_LIST);
         logResponseData = context.getBooleanParameter(KEY_LOG_RESPONSE_DATA, DEFAULT_LOG_RESPONSE_DATA);
         logSampleData = context.getBooleanParameter(KEY_LOG_SAMPLE_DATA, DEFAULT_LOG_SAMPLE_DATA);
-
+        
         Iterator<String> iterator = context.getParameterNamesIterator();
         while (iterator.hasNext()) {
             String paramName = iterator.next();
@@ -228,18 +237,22 @@ public class AzureBackendClient extends AbstractBackendListenerClient {
 
     @Override
     public void handleSampleResults(List<SampleResult> results, BackendListenerContext context) {
-
-        boolean samplersToFilterMatch;
-        for (SampleResult sr : results) {
-
-            samplersToFilterMatch = samplersList.isEmpty() ||
-                    (useRegexForSamplerList && sr.getSampleLabel().matches(samplersList)) ||
-                    (!useRegexForSamplerList && samplersToFilter.contains(sr.getSampleLabel()));
-
-            if (samplersToFilterMatch) {
-                trackRequest(testName, sr);
-            }
+    
+        enabled = context.getBooleanParameter(KEY_ENABLED, DEFAULT_ENABLED);
+        if(enabled){
+         boolean samplersToFilterMatch;
+                for (SampleResult sr : results) {
+        
+                    samplersToFilterMatch = samplersList.isEmpty() ||
+                            (useRegexForSamplerList && sr.getSampleLabel().matches(samplersList)) ||
+                            (!useRegexForSamplerList && samplersToFilter.contains(sr.getSampleLabel()));
+        
+                    if (samplersToFilterMatch) {
+                        trackRequest(testName, sr);
+                    }
+                }
         }
+       
     }
 
     @Override
